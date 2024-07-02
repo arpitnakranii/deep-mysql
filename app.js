@@ -1,48 +1,147 @@
 const dotEnv = require('dotenv');
-const mySql=require('mysql');
+const mySql = require('mysql');
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
 
-dotEnv.config({path:'./.env'});
+app.use(bodyParser.urlencoded({ extended: false }));
+dotEnv.config({ path: './.env' });
 const con = mySql.createConnection({
-    host:process.env.HOST,
-    user:process.env.USER,
-    password:process.env.password,
-    database:process.env.DB
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.password,
+    database: process.env.DB
 })
-con.connect(function(err,success){
-    if(err) throw err;
+con.connect(function (err, success) {
+    if (err) throw err;
     console.log("Connected");
 });
 
-const creteTableUser = `CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`;
+app.post('/api/register', function (req, res) {
+    const userName = req.body.username;
+    const password = req.body.password;
 
-const createTablePosts = `CREATE TABLE posts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    author_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (author_id) REFERENCES users(id)
-)`;
-
-const createTableComments = `CREATE TABLE comments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    post_id INT NOT NULL,
-    author VARCHAR(50) NOT NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id)
-)`;
-
-
-con.query(createTableComments,function(err,success){
-    if(err) throw err;
-    console.log(success);
+    if (!userName) {
+        res.status(200).json({
+            massage: "Enter Username"
+        });
+        return;
+    }
+    if (!password) {
+        res.status(200).json({
+            massage: "Enter Username"
+        });
+        return;
+    }
+    const checkValidUser = `select count(id) as count from users where username=?`;
+    con.query(checkValidUser, [userName], function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] != 0) {
+            res.status(200).json({
+                massage: "User already Exists"
+            });
+        }
+        else {
+            const query = `INSERT INTO users (username,password) values(?,?)`;
+            con.query(query, [userName, password], function (err, success) {
+                if (err) throw err;
+                res.status(200).json({
+                    massage: "User Register Successfully"
+                });
+            });
+        }
+    });
 });
+
+app.post('/api/login', function (req, res) {
+    const userName = req.body.username;
+    const password = req.body.password;
+
+    if (!userName) {
+        res.status(200).json({
+            massage: "Enter Username"
+        });
+        return;
+    }
+    if (!password) {
+        res.status(200).json({
+            massage: "Enter Username"
+        });
+        return;
+    }
+    const checkValidUser = `select count(id) as count from users where username=? and password=?`;
+    con.query(checkValidUser, [userName, password], function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "User Not Found"
+            });
+        }
+        else {
+            res.status(200).json({
+                massage: "User login Successfully"
+            });
+        }
+    });
+});
+
+app.post('/api/posts', function (req, res) {
+    const title = req.body.title;
+    const content = req.body.content;
+    const authorId = req.body.author_id;
+    if (!title) {
+        res.status(200).json({
+            massage: "plz Enter Titile"
+        });
+        return;
+    }
+    if (!content) {
+        res.status(200).json({
+            massage: "plz Enter Content"
+        });
+        return;
+    }
+    if (!authorId) {
+        res.status(200).json({
+            massage: "plz Enter author_id"
+        });
+        return;
+    }
+    const checkValidAuthor_id = `select count(id) as count from users where id=?`;
+    con.query(checkValidAuthor_id, [authorId], function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "Enter valid author id"
+            });
+        }
+        else {
+            const checkValidPost = `select count(title) as count from posts where title=?`;
+            con.query(checkValidPost, [title], function (err, success) {
+                if (err) throw err;
+                if (success[0]["count"] != 0) {
+                    res.status(200).json({
+                        massage: "Enter valid title this title Already exists"
+                    });
+                }
+                else {
+                    const query = `insert into posts (title,content,author_id) values(?,?,?)`;
+                    con.query(query, [title, content, authorId], function (err, success) {
+                        if (err) throw err
+                        res.status(200).json({
+                            massage: "Post upload Successfully"
+                        });
+                    });
+                }
+            });
+
+        }
+    });
+
+});
+
+app.listen(3000);
+
 
 
 
