@@ -218,7 +218,7 @@ app.put('/api/posts', function (req, res) {
         }
     });
 });
-app.delete('/api/posts',function(req,res){
+app.delete('/api/posts', function (req, res) {
     const id = req.body.id;
     if (!id) {
         res.status(200).json({
@@ -240,7 +240,7 @@ app.delete('/api/posts',function(req,res){
             con.query(query, function (err, success) {
                 if (err) throw err;
                 res.status(200).json({
-                    massage:"Posts Deleted"
+                    massage: "Posts Deleted"
                 });
             });
         }
@@ -259,8 +259,7 @@ app.get('/api/users/post', function (req, res) {
             });
             return;
         }
-        else
-        {
+        else {
             const query = `SELECT posts.*,users.username as author FROM posts INNER JOIN users ON users.id = posts.author_id where users.id =` + id;
             con.query(query, function (err, success) {
                 if (err) throw err;
@@ -270,7 +269,78 @@ app.get('/api/users/post', function (req, res) {
             })
         }
     });
-  
+
+});
+
+app.get('/api/posts/count', function (req, res) {
+    const query = `select count(id) as count from posts`
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        res.status(200).json({
+            success
+        })
+    });
+});
+
+app.get('/api/posts/total-length', function (req, res) {
+    const query = `select content from posts`;
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        let content = "";
+        for (i = 0; i < success.length; i++) {
+            content += success[i]["content"];
+        }
+        console.log(content);
+        res.status(200).json({
+            totalLength: content.length
+        });
+    });
+});
+
+app.get('/api/posts/average-length', function (req, res) {
+    const query = `select content from posts`;
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        let content = "";
+        for (i = 0; i < success.length; i++) {
+            content += success[i]["content"];
+        }
+        console.log(content);
+        res.status(200).json({
+            totalLength: content.length / success.length
+        });
+    });
+});
+app.get('/api/users/posts/count', function (req, res) {
+
+    const user_id = req.body.user_id;
+    if (!user_id) {
+        res.status(200).json({
+            massage: "Enter user id"
+        })
+        return;
+    }
+    const checkValidId = `select count(id) as count from users where id=` + user_id;
+    con.query(checkValidId, function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "enter valid id"
+            });
+            return;
+        }
+        else
+        {
+            const query = `select count(id)  as count from posts where author_id = ` + user_id;
+            con.query(query, function (err, success) {
+                if (err) throw err;
+                res.status(200).json({
+                    success
+                });
+            });
+        }
+    });
+   
 });
 
 app.listen(3000);
