@@ -140,6 +140,139 @@ app.post('/api/posts', function (req, res) {
 
 });
 
+app.get('/api/posts', function (req, res) {
+
+    const limit = req.body.limit;
+    const page = (req.body.page - 1) * limit;
+    const query = `select * from posts limit ` + page + `,` + limit;
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        res.status(200).json({
+            postRecord: success
+        })
+    });
+});
+
+app.get('/api/post', function (req, res) {
+    const id = req.body.id;
+    const checkValidId = `select count(id) as count from posts where id=` + id;
+    con.query(checkValidId, function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "enter valid id"
+            });
+            return;
+        }
+    });
+
+    const query = `SELECT posts.*,users.username as author FROM posts INNER JOIN users ON users.id = posts.author_id where posts.id =` + id;
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        res.status(200).json({
+            data: success
+        })
+    })
+});
+
+app.put('/api/posts', function (req, res) {
+    const id = req.body.id;
+    const title = req.body.title;
+    const content = req.body.content;
+    if (!id) {
+        res.status(200).json({
+            massage: "plz enter id"
+        });
+        return;
+    }
+    if (!title) {
+        res.status(200).json({
+            massage: "plz enter title"
+        });
+        return;
+    }
+    if (!content) {
+        res.status(200).json({
+            massage: "plz enter content"
+        });
+        return;
+    }
+
+    const checkValidId = `select count(id) as count from posts where id=` + id;
+    con.query(checkValidId, function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "enter valid id"
+            });
+            return;
+        }
+        else {
+            const query = `update posts set title=?,content=?,updated_at=current_timestamp where id=` + id;
+            con.query(query, [title, content], function (err, success) {
+                if (err) throw err;
+                res.status(200).json({
+                    data: success
+                });
+            });
+        }
+    });
+});
+app.delete('/api/posts',function(req,res){
+    const id = req.body.id;
+    if (!id) {
+        res.status(200).json({
+            massage: "plz enter id"
+        });
+        return;
+    }
+    const checkValidId = `select count(id) as count from posts where id=` + id;
+    con.query(checkValidId, function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "enter valid id"
+            });
+            return;
+        }
+        else {
+            const query = `delete from posts where id=` + id;
+            con.query(query, function (err, success) {
+                if (err) throw err;
+                res.status(200).json({
+                    massage:"Posts Deleted"
+                });
+            });
+        }
+    });
+});
+
+
+app.get('/api/users/post', function (req, res) {
+    const id = req.body.id;
+    const checkValidId = `select count(id) as count from users where id=` + id;
+    con.query(checkValidId, function (err, success) {
+        if (err) throw err;
+        if (success[0]["count"] == 0) {
+            res.status(200).json({
+                massage: "enter valid id"
+            });
+            return;
+        }
+        else
+        {
+            const query = `SELECT posts.*,users.username as author FROM posts INNER JOIN users ON users.id = posts.author_id where users.id =` + id;
+            con.query(query, function (err, success) {
+                if (err) throw err;
+                res.status(200).json({
+                    data: success
+                })
+            })
+        }
+    });
+  
+});
+
 app.listen(3000);
 
 
