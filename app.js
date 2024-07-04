@@ -329,8 +329,7 @@ app.get('/api/users/posts/count', function (req, res) {
             });
             return;
         }
-        else
-        {
+        else {
             const query = `select count(id)  as count from posts where author_id = ` + user_id;
             con.query(query, function (err, success) {
                 if (err) throw err;
@@ -340,7 +339,72 @@ app.get('/api/users/posts/count', function (req, res) {
             });
         }
     });
-   
+
+});
+
+app.get('/api/posts/search', function (req, res) {
+    const key = req.body.query;
+    if (!key) {
+        res.status(200).json({
+            massage: 'Enter valid query'
+        });
+        return;
+    }
+
+    const query = `select * from posts where title=?`;
+    con.query(query, key, function (err, success) {
+        if (err) throw err;
+        if (success.length != 0) {
+            res.status(200).json({
+                totalRecord: success.length,
+                result: success
+            });
+        }
+        else {
+            const checkForContent = `select * from posts where content=?`;
+            con.query(checkForContent, key, function (err, success) {
+                if (err) throw err;
+                if (success != 0) {
+                    res.status(200).json({
+                        totalRecord: success.length,
+                        result: success
+                    });
+                }
+                else {
+                    res.status(200).json({
+                        result: 'Result Not Found'
+                    })
+                }
+            });
+        }
+    });
+});
+
+app.get('/api/posts/transaction', function (req, res) {
+    const data = req.body.posts;
+    if (!data) {
+        res.status(200).json({
+            massage: "invalid input"
+        });
+        return;
+    }
+    const query = `insert into posts (title,content,author_id) values ` + data;
+    con.query(query, function (err, success) {
+        if (err) throw err;
+        res.status(200).json({
+            massage: success["affectedRows"] + ' record inserted'
+        });
+    });
+});
+
+app.get('/api/posts/stats',function(req,res){
+    const query = `select min(length(content)) as minLength , max(length(content)) as maxLength , avg(length(content)) as avgLength from posts`;
+    con.query(query,function(err,success){
+        if(err) throw err
+        res.status(200).json({
+            data:success
+        });
+    })
 });
 
 app.listen(3000);
